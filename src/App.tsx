@@ -563,7 +563,7 @@ function App() {
     }, [tick, run])
 
     useEffect(() => {
-        if (kills && kills % 10 == 0) {
+        if (kills && kills % 20 == 0) {
             setLevel(level + 1)
         }
     }, [kills])
@@ -628,7 +628,7 @@ function App() {
     const addEnemy = () => {
         if (!run) return
 
-        if (enemies.length < level && Math.floor(Math.random() * 100) == 19) {
+        if (enemies.length < level+1 && Math.floor(Math.random() * 100) == 19) {
             let enemy
             const random = Math.floor(Math.random() * 3);
             switch (random) {
@@ -778,8 +778,8 @@ function App() {
         setBlasts([])
         setShots([])
         setLevel(1)
-        pod.resetWeapon()
         setPowerUps([])
+        setPod(new Pod)
     }
 
     const runControl = () => {
