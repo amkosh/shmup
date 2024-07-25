@@ -287,7 +287,7 @@ class Enemy {
 
     private getPowerUp(level: number, podPower: number) {
 
-        if(podPower > 4) return null
+        if(podPower > 5) return null
 
         const hasPowerUp = Math.random() > 0.20 + ( level < 7 ? level*0.1 : 0) + (podPower * 0.1);
         if (hasPowerUp) {
@@ -306,10 +306,10 @@ class Enemy {
                 return 1
             }
             if(random % 9 == 0) {
-                return Math.floor(Math.random()*10) % 9 ? 5 : 3
+                return Math.floor(Math.random()*10) % 9 ? 5 : null
             }
 
-            return null;
+            return 3;
             // return Math.floor(Math.random() * 5);
         }
         return null;
@@ -753,7 +753,6 @@ function App() {
     const draw = () => {
         if (!ctx) return
         drawObjects(ctx);
-        pod.draw(ctx);
     }
 
     const drawObjects = (ctx: CanvasRenderingContext2D) => {
@@ -765,6 +764,8 @@ function App() {
         enemies.forEach(enemy => {
             enemy.draw(ctx)
         })
+
+        pod.draw(ctx);
 
         blasts.forEach(blast => {
             blast.draw(ctx)
@@ -850,6 +851,9 @@ function App() {
             }}>
                 <span style={{paddingLeft: 8}}>
                     Уровень: {level}
+                </span>
+                <span style={{paddingLeft: 8}}>
+                    Убито: {kills}
                 </span>
                 <span style={{paddingRight: 8}}>
                     Оружие: S:{pod.weapon.speed} | Q:{pod.weapon.quantity} | L:{pod.weapon.type} | P:{pod.weapon.power}
