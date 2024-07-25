@@ -2,7 +2,7 @@ import React, {MouseEventHandler, useEffect, useRef, useState} from 'react';
 import './App.css';
 
 type TWeapon = {
-    type: 0 | 1 | 2;
+    type: 0 | 1 | 2 | 3;
     speed: number;
     quantity: number;
     aim: boolean;
@@ -19,6 +19,7 @@ class Shoot {
     blink: boolean;
     speed: number;
     power: number;
+    quantity: number;
 
     constructor(x: number, y: number, weapon: TWeapon) {
         this.x = x - 2;
@@ -29,6 +30,7 @@ class Shoot {
         this.blink = false;
         this.speed = weapon.speed;
         this.power = weapon.power;
+        this.quantity = weapon.quantity;
     }
 
     moveUp() {
@@ -36,8 +38,8 @@ class Shoot {
         this.blink = !this.blink;
     }
 
-    getColor() {
-        switch (this.power) {
+    getColor(type: number) {
+        switch (type) {
             case 0: return '#63ff33'
             case 1: return '#AAff33'
             case 2: return '#e6ff45'
@@ -49,12 +51,12 @@ class Shoot {
     }
 
     draw(ctx: CanvasRenderingContext2D) {
-        ctx.fillStyle = this.blink ? '#EDFDEF' : this.getColor()
-        ctx.shadowColor = "#E0FFD6";
+        ctx.fillStyle = this.blink ? '#EDFDEF' : this.getColor(this.power)
+        ctx.shadowColor = this.getColor(this.quantity)
         ctx.shadowBlur = 10;
 
         ctx.fillRect(this.x, this.y, this.width, this.height)
-        ctx.fillStyle = this.getColor()
+        ctx.fillStyle = this.getColor(this.speed)
         ctx.shadowColor = "none";
         ctx.shadowBlur = 0;
         ctx.fillRect(this.x + 1, this.y, this.width / 2, this.height - (this.height / 4))
@@ -83,7 +85,11 @@ class Pod {
     }
 
     getPower() {
-        return ((this.weapon.type + this.weapon.power + this.weapon.type + this.weapon.speed)/4);
+        const power = (this.weapon.type + this.weapon.power + this.weapon.type + this.weapon.speed)/4
+        if(power >= 4) {
+            this.weapon.type = 3
+        }
+        return power
     }
 
     upgrade(type: number) {
@@ -111,12 +117,14 @@ class Pod {
     }
 
     resetWeapon() {
+        const {type, speed, quantity, power} = this.weapon
         this.weapon = {
-            type: 0,
-            speed: 1,
-            quantity: 1,
+            // @ts-ignore
+            type: type > 0 ? type - 1 : type,
+            speed: speed > 1 ? speed - 1 : 1,
+            quantity: quantity > 1 ? quantity - 1 : 1,
             aim: false,
-            power: 1
+            power: power > 1 ? power - 1 : 1
         }
     }
 
@@ -140,8 +148,39 @@ class Pod {
         this.width = width;
     }
 
+    getColor(color: string) {
+
+        const modifier = Math.floor(this.getPower()*30)
+
+        let r, g, b;
+
+        r = parseInt(color.substring(1,3),16) + modifier
+        g = parseInt(color.substring(3,5),16) - (modifier*2)
+        b = parseInt(color.substring(5,7),16) + modifier
+
+        if (r > 200) {
+            r = 200;
+        }
+        if (g < 20) {
+            g = 20;
+        }
+        if (b > 255) {
+            b = 255;
+        }
+
+        return `#${r.toString(16) + g.toString(16) + b.toString(16)}`.substring(0,7)
+    }
+
     draw(ctx: CanvasRenderingContext2D) {
-        ctx.fillStyle = "#63ff33"
+
+
+        ctx.fillStyle = this.getColor("#63ff33")
+
+        if(this.weapon.type == 3) {
+            ctx.shadowColor = "#61edff";
+            ctx.shadowBlur = this.getPower();
+        }
+
         ctx.beginPath()
         // @ts-ignore
         ctx.roundRect(this.x, this.y, this.width, this.height, 3)
@@ -160,7 +199,36 @@ class Pod {
                 ctx.fillRect(this.x, this.y-3, 4, this.height + 2)
                 ctx.fillRect(this.x + 36, this.y-3, 4, this.height + 2)
                 break
+            case 3:
+
+                ctx.fillStyle = "#ff2f00"
+                ctx.fillRect(this.x + 18, this.y-5, 4, this.height + 2)
+                ctx.fillRect(this.x, this.y-3, 4, this.height + 2)
+                ctx.fillRect(this.x + 36, this.y-3, 4, this.height + 2)
+
+                ctx.beginPath()
+                ctx.moveTo(this.x, this.y+5)
+
+                ctx.lineTo(this.x + 5, this.y-2)
+                ctx.lineTo(this.x + 5, this.y+5)
+
+                ctx.lineTo(this.x + this.width/2, this.y-5)
+
+                ctx.lineTo(this.x + this.width - 5, this.y+5)
+                ctx.lineTo(this.x + this.width - 5, this.y-2)
+                ctx.lineTo(this.x + this.width, this.y+5)
+
+                ctx.fill()
+                ctx.closePath()
+
+                ctx.beginPath()
+                ctx.fillStyle = "#61edff"
+                ctx.ellipse(this.x + this.width/2, this.y+1, 2, 4, 0, 0, 360)
+                ctx.fill()
+                ctx.closePath()
         }
+        ctx.shadowColor = "none";
+        ctx.shadowBlur = 0;
     }
 
     shoot(objects: Shoot[]) {
@@ -174,6 +242,11 @@ class Pod {
                 objects.push(new Shoot(this.x + this.width, this.y, this.weapon))
                 break;
             case 2:
+                objects.push(new Shoot(this.x + this.width / 2, this.y, this.weapon))
+                objects.push(new Shoot(this.x, this.y, this.weapon))
+                objects.push(new Shoot(this.x + this.width, this.y, this.weapon))
+                break;
+            case 3:
                 objects.push(new Shoot(this.x + this.width / 2, this.y, this.weapon))
                 objects.push(new Shoot(this.x, this.y, this.weapon))
                 objects.push(new Shoot(this.x + this.width, this.y, this.weapon))
@@ -347,7 +420,7 @@ class ArmoredEnemy extends Enemy {
 
     getColor() {
         const seed = 255 - this.armor * 30
-        return `#${seed.toString(16)}bd00`
+        return seed > 0 ? `#${seed.toString(16)}bd00` : "#fff"
     }
 
     draw(ctx: CanvasRenderingContext2D) {
@@ -362,7 +435,8 @@ class ArmoredEnemy extends Enemy {
 
         if (this.powerUp != null) {
             ctx.beginPath()
-            ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2 + 2, this.width / 2, this.height / 2, 0, 0, 360)
+            // @ts-ignore
+            ctx.roundRect(this.x+2, this.y+2, this.width-4, this.height + (this.armor * 3) - 4, 3)
             ctx.stroke()
             ctx.closePath()
         }
@@ -501,6 +575,15 @@ function App() {
         }
     }, [score])
 
+    const liveLost = () => {
+        setLives(lives - 1)
+        enemies.forEach(enemy => {
+            blasts.push(new Blast(enemy.x, enemy.y))
+        })
+        setEnemies([])
+        pod.resetWeapon()
+    }
+
     const cycle = () => {
         if (!run) return
         if (lives <= 0) {
@@ -518,7 +601,7 @@ function App() {
                 enemy.move();
                 if (enemy.y > 350) {
                     enemies.splice(enemies.findIndex(o => o.id === enemy.id), 1)
-                    setLives(lives - 1)
+                    liveLost()
                 }
             })
 
@@ -571,7 +654,9 @@ function App() {
                     && enemy.x + enemy.width > shot.x
                     && enemy.y < shot.y + shot.height
                     && enemy.y + enemy.height > shot.y) {
-                    shots.splice(shots.findIndex(o => o.id === shot.id), 1)
+                    if(pod.weapon.type != 3) {
+                        shots.splice(shots.findIndex(o => o.id === shot.id), 1)
+                    }
                     enemy.armor -= shot.power
                     if (enemy.armor <= 0) {
                         enemies.splice(enemies.findIndex(o => o.id === enemy.id), 1)
@@ -686,15 +771,20 @@ function App() {
         pod.shoot(shots)
     }
 
+    const reset = () => {
+        setLives(3)
+        setScore(0)
+        setEnemies([])
+        setBlasts([])
+        setShots([])
+        setLevel(1)
+        pod.resetWeapon()
+        setPowerUps([])
+    }
+
     const runControl = () => {
         if (lives <= 0) {
-            setLives(3)
-            setScore(0)
-            setEnemies([])
-            setBlasts([])
-            setShots([])
-            setLevel(1)
-            pod.resetWeapon()
+            reset()
         }
         setRun(!run)
     }
