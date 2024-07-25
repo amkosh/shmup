@@ -287,6 +287,8 @@ class Enemy {
 
     private getPowerUp(level: number, podPower: number) {
 
+        if(podPower > 4) return null
+
         const hasPowerUp = Math.random() > 0.20 + ( level < 7 ? level*0.1 : 0) + (podPower * 0.1);
         if (hasPowerUp) {
             const random = Math.floor(Math.random()*10)
@@ -303,8 +305,11 @@ class Enemy {
             if(random % 4 == 0) {
                 return 1
             }
+            if(random % 9 == 0) {
+                return Math.floor(Math.random()*10) % 9 ? 5 : 3
+            }
 
-            return 3;
+            return null;
             // return Math.floor(Math.random() * 5);
         }
         return null;
@@ -475,6 +480,8 @@ class PowerUp {
                 return "A"
             case 4:
                 return "P"
+            case 4:
+                return "+"
             default:
                 return ""
         }
@@ -580,6 +587,9 @@ function App() {
         enemies.forEach(enemy => {
             blasts.push(new Blast(enemy.x, enemy.y))
         })
+        blasts.push(new Blast(pod.x, pod.y))
+        blasts.push(new Blast(pod.x + pod.width, pod.y))
+        blasts.push(new Blast(pod.x + pod.width/2, pod.y))
         setEnemies([])
         pod.resetWeapon()
     }
@@ -628,7 +638,7 @@ function App() {
     const addEnemy = () => {
         if (!run) return
 
-        if (enemies.length < level+1 && Math.floor(Math.random() * 100) == 19) {
+        if (enemies.length <= level*pod.getPower() && Math.floor(Math.random() * 100) == 19) {
             let enemy
             const random = Math.floor(Math.random() * 3);
             switch (random) {
@@ -677,8 +687,13 @@ function App() {
             if (pod.x - pod.width / 2 < powerUp.x + 8
                 && pod.x + pod.width > powerUp.x
                 && pod.y < powerUp.y + 8
-                && pod.y + pod.height > powerUp.y) {
-                pod.upgrade(powerUp.type)
+                && pod.y + pod.height > powerUp.y
+            ) {
+                if(powerUp.type == 5) {
+                    setLives(lives + 1)
+                } else {
+                    pod.upgrade(powerUp.type)
+                }
                 powerUps.splice(powerUps.findIndex(o => o.x === powerUp.x), 1)
             }
         })
